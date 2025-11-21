@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  crossOrigin: "anonymous"
+  crossOrigin: "anonymous",
+  output: 'standalone'
   /* config options here */
 };
 

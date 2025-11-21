@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: cevra-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: cevra
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - cevra-network
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:v1.15.1
+    container_name: cevra-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - cevra-network
+
+  # API Service
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: production
+    container_name: cevra-api
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/cevra?authSource=admin
+      - QDRANT_URL=http://qdrant:6333
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - mongodb
+      - qdrant
+    networks:
+      - cevra-network
+    volumes:
+      - ./api/uploads:/app/uploads
+
+  # UI Service
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+      target: production
+    container_name: cevra-ui
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    depends_on:
+      - api
+    networks:
+      - cevra-network
+
+  # Development API Service (commented out by default)
+  # api-dev:
+  #   build:
+  #     context: ./api
+  #     dockerfile: Dockerfile
+  #     target: development
+  #   container_name: cevra-api-dev
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     - NODE_ENV=development
+  #     - PORT=3000
+  #     - MONGODB_URI=mongodb://admin:password123@mongodb:27017/cevra?authSource=admin
+  #     - QDRANT_URL=http://qdrant:6333
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #   depends_on:
+  #     - mongodb
+  #     - qdrant
+  #   networks:
+  #     - cevra-network
+  #   volumes:
+  #     - ./api:/app
+  #     - /app/node_modules
+  #     - ./api/uploads:/app/uploads
+
+  # Development UI Service (commented out by default)
+  # ui-dev:
+  #   build:
+  #     context: ./ui
+  #     dockerfile: Dockerfile
+  #     target: development
+  #   container_name: cevra-ui-dev
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=development
+  #     - NEXT_PUBLIC_API_URL=http://localhost:3001
+  #   depends_on:
+  #     - api-dev
+  #   networks:
+  #     - cevra-network
+  #   volumes:
+  #     - ./ui:/app
+  #     - /app/node_modules
+  #     - /app/.next
+
+volumes:
+  mongodb_data:
+    driver: local
+  qdrant_data:
+    driver: local
+
+networks:
+  cevra-network:
+    driver: bridge

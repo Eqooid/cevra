@@ -130,8 +130,8 @@ export class ChatController {
    * @author Cristono Wijaya
    */
   @Post('similarity-search')
-  similaritySearch(@Body() body:SearchQueryDto): Promise<SimilarityValueDto[]> {
-    return this.chatService.similiaritySearch(body.query, body.storageId);
+  async similaritySearch(@Body() body:SearchQueryDto): Promise<any> {
+    return await this.chatService.similaritySearch(body.query, body.storageId);
   }
 
   /**
@@ -142,7 +142,7 @@ export class ChatController {
    * @author Cristono Wijaya
    */
   @Post('chat-response')
-  chatResponse(@Body() body:ChatQueryDto): Promise<any> {
+  chatResponse(@Body() body:ChatQueryDto): any {
     return this.chatService.chatResponse(body.query, body.chatId);
   }
 

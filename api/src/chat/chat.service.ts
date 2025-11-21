@@ -60,7 +60,7 @@ export class ChatService {
    * @author Cristono Wijaya
    */
   private async _getVectorStore(collectionName: string) {
-    return this.qdrantService.getVectorStore(collectionName);
+    return await this.qdrantService.getVectorStore(collectionName);
   }
 
   /**
@@ -247,25 +247,30 @@ export class ChatService {
    * @returns An array of SimilarityValueDto containing similar documents and their scores.
    * @author Cristono Wijaya
    */
-  public async similiaritySearch(query: string, storageId: string): Promise<SimilarityValueDto[]> {
-    const storage = await this.storageModel.findById(storageId);
-    if (!storage) {
-      throw new Error('Storage not found');
+  public async similaritySearch(query: string, storageId: string): Promise<any> {
+    try {
+      const storage = await this.storageModel.findById(storageId);
+      if (!storage) {
+        throw new Error(`Storage not found for ID: ${storageId}`);
+      }
+      const vectorStore = await this.qdrantService.getVectorStore(storage.qdrantCollectionName);
+      const response = await vectorStore.similaritySearchWithScore(query, 5);
+
+      return response.map(resizeTo => {
+        const [doc, score] = resizeTo;
+        return {
+          content: doc.pageContent,
+          source: doc.metadata.source,
+          page: doc.metadata.page,
+          fileId: doc.metadata.fileId,
+          storageId: doc.metadata.storageId,
+          score
+        };
+      });
     }
-    const vectorStore = await this._getVectorStore(storage.qdrantCollectionName);
-    const response = await vectorStore.similaritySearchWithScore(query, 5);
-    
-    return response.map(resizeTo => {
-      const [doc, score] = resizeTo;
-      return {
-        content: doc.pageContent,
-        source: doc.metadata.source,
-        page: doc.metadata.page,
-        fileId: doc.metadata.fileId,
-        storageId: doc.metadata.storageId,
-        score
-      };
-    });
+    catch (error) {
+      throw new Error(`Failed to perform similarity search: ${error.message}`);
+    } 
   }
 
   /**
@@ -276,56 +281,61 @@ export class ChatService {
    * @author Cristono Wijaya
    */
   public async chatResponse(query: string, chatId: string): Promise<any> {
-    const chat = await this.chatModel.findById(chatId);
-    if (!chat) {
-      throw new Error('Chat not found');
-    }
+    try {
+        const chat = await this.chatModel.findById(chatId);
+      if (!chat) {
+        throw new Error('Chat not found');
+      }
+      
+      const storage = await this.storageModel.findById(chat.storageId);
+      if (!storage) {
+        throw new Error('Storage not found');
+      }
+      const vectorStore = await this._getVectorStore(storage.qdrantCollectionName);
+      const retrieve = this._retriveTool(vectorStore);
+
+      const tools = [retrieve];
+      const systemPrompt =`
+        You are an AI assistant that helps users by providing information based on the documents retrieved from the storage.
+        Use the retrieved documents to answer the user's query as accurately as possible.
+      `;
     
-    const storage = await this.storageModel.findById(chat.storageId);
-    if (!storage) {
-      throw new Error('Storage not found');
+      const agent = createAgent({
+        model: "gpt-4o-mini",
+        tools,
+        systemPrompt,
+        checkpointer: this._checkpointer,
+        middleware: [summarizationMiddleware({ 
+          model: "gpt-4o-mini",  
+          messagesToKeep: 5 
+        })]
+      });
+      
+      let userInput = {
+        messages: [{ role: "user", content: query }]
+      }
+
+      this.chatMessageModel.create({
+        chatId: chat._id,
+        role: 'user',
+        content: query
+      });
+
+      const result = await agent.invoke(userInput, {
+        configurable: { thread_id: chatId }
+      });
+
+      const aiResponse = this.chatMessageModel.create({
+        chatId: chat._id,
+        role: result.messages[result.messages.length - 1].type,
+        content: result.messages[result.messages.length - 1].content
+      });
+      
+      return aiResponse;
     }
-    const vectorStore = await this._getVectorStore(storage.qdrantCollectionName);
-    const retrieve = this._retriveTool(vectorStore);
-
-    const tools = [retrieve];
-    const systemPrompt =`
-      You are an AI assistant that helps users by providing information based on the documents retrieved from the storage.
-      Use the retrieved documents to answer the user's query as accurately as possible.
-    `;
-  
-    const agent = createAgent({
-      model: "gpt-4o-mini",
-      tools,
-      systemPrompt,
-      checkpointer: this._checkpointer,
-      middleware: [summarizationMiddleware({ 
-        model: "gpt-4o-mini",  
-        messagesToKeep: 5 
-      })]
-    });
-    
-    let userInput = {
-      messages: [{ role: "user", content: query }]
+    catch (error) {
+      throw new Error(`Failed to get chat response: ${error.message}`);
     }
-
-    this.chatMessageModel.create({
-      chatId: chat._id,
-      role: 'user',
-      content: query
-    });
-
-    const result = await agent.invoke(userInput, {
-      configurable: { thread_id: chatId }
-    });
-
-    const aiResponse = this.chatMessageModel.create({
-      chatId: chat._id,
-      role: result.messages[result.messages.length - 1].type,
-      content: result.messages[result.messages.length - 1].content
-    });
-    
-    return aiResponse;
   }
   
   /**
