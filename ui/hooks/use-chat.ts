@@ -1,3 +1,4 @@
+import api from "@/apis/cevra-api";
 import useSWR from "swr";
 import { create } from "zustand";
 
@@ -31,56 +32,6 @@ export interface Message {
 }
 
 /**
- * Dummy data for initial chats.
- * In a real application, this data would come from a backend service.
- * @constant {Chat[]}
- */
-const dummyData: Chat[] = [
-  {
-    id: "chat-1",
-    name: "Project Discussion",
-    description: "Discussion about the new project requirements",
-    storageId: "ad123133",
-    storageName: "Storage A",
-    createdAt: "2024-11-04",
-    lastMessage: { role:"assistant", content:"Hello! How can I help you with your project today?" },
-    messages: [
-      {
-        id: "msg-1",
-        content: "Hello! How can I help you with your project today?",
-        role: "assistant",
-        timestamp: "2024-11-04T10:00:00Z"
-      }
-    ],
-    countMessages: 1
-  },
-  {
-    id: "chat-2",
-    name: "Data Analysis",
-    description: "Analyzing customer data patterns",
-    storageId: "bd456456",
-    storageName: "Storage B",
-    createdAt: "2024-11-03",
-    lastMessage: { role:"assistant", content: "Of course! I'd be happy to help you analyze your customer data. What specific aspects would you like to focus on?" },
-    messages: [
-      {
-        id: "msg-2",
-        content: "Can you help me analyze the latest customer data?",
-        role: "user",
-        timestamp: "2024-11-03T14:30:00Z"
-      },
-      {
-        id: "msg-3",
-        content: "Of course! I'd be happy to help you analyze your customer data. What specific aspects would you like to focus on?",
-        role: "assistant",
-        timestamp: "2024-11-03T14:30:30Z"
-      }
-    ],
-    countMessages: 2
-  }
-];
-
-/**
  * ChatState interface representing the state and actions for chat management.
  * @interface ChatState
  * @author Cristono Wijaya
@@ -97,6 +48,7 @@ export interface ChatState {
   setSelectedChat: (chat: Chat | undefined) => void;
   handleCreateChat: (newChat: Omit<Chat, 'id' | 'createdAt' | 'messages' | 'lastMessage' | 'countMessages'>) => void;
   handleSendMessage: (content: string, callback?: () => void) => void;
+  handleSendMessageStreaming: (content: string, callback?: () => void) => void;
   handleEditChat: (chatId: string, updatedData: { name: string; description: string }) => void;
   handleDeleteChat: (chatId: string) => void;
   setLoading: (isLoading: boolean) => void;
@@ -124,6 +76,7 @@ const useChat = create<ChatState>((set, get) => ({
     set({ selectedChat: chat });
   },
   setChats: (chats: Chat[]) => {
+    console.log(chats);
     set({ chats, isLoading: false })
   },
   handleCreateChat: async (newChat) => {
@@ -134,7 +87,61 @@ const useChat = create<ChatState>((set, get) => ({
       isCreateDialogOpen: false
     }));
   },
-  handleSendMessage: async (content: string, callback) => {
+  handleSendMessage: async (content: string, callback) => { 
+    const selectedChat = get().selectedChat;
+    if (!selectedChat) return;
+
+    set({ 
+      isStreaming: true,
+      selectedChat: {
+      ...selectedChat,
+      messages: [...selectedChat.messages, {
+        id: `msg-${Date.now()}`,
+        content,
+        role: 'user',
+        timestamp: new Date().toISOString()
+      }]
+      },
+      chats: get().chats.map(chat => 
+      chat.id === selectedChat.id
+        ? { ...chat, lastMessage: {
+        content,
+        role: "user"
+        }, countMessages: chat.countMessages + 1 }
+        : chat
+      )
+    });
+    
+    // Callback executes after state update
+    if (callback) {
+      // Use setTimeout to ensure callback runs after state update is complete
+      setTimeout(() => callback(), 0);
+    }
+    
+    const userMessage = await sendMessage(selectedChat.id, content);
+    
+    set((state) => ({
+      isStreaming: false,
+      selectedChat: {
+        ...state.selectedChat!,
+        messages: [...state.selectedChat!.messages, userMessage]
+      },
+      chats: state.chats.map(chat => 
+        chat.id === selectedChat.id
+          ? { ...chat, lastMessage: { 
+            content: userMessage.content,
+            role: "user"
+          }, countMessages: chat.countMessages + 1 }
+          : chat
+      )
+    }));
+
+    if (callback) {
+      // Use setTimeout to ensure callback runs after state update is complete
+      setTimeout(() => callback(), 0);
+    }
+  },
+  handleSendMessageStreaming: async (content: string, callback) => {
     const selectedChat = get().selectedChat;
     if (!selectedChat) return;
 
@@ -212,11 +219,21 @@ const useChat = create<ChatState>((set, get) => ({
  * @author Cristono Wijaya
  */
 const fetchChatData = async (): Promise<Chat[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(dummyData);
-    }, 500);
-  });
+  const response = await api.get('/chat/all-chats');
+  return response.data.data.map((chat: any) => ({
+    id: chat._id,
+    name: chat.name,
+    description: chat.description,
+    storageId: chat.storageId,
+    storageName: chat.storageName,
+    createdAt: chat.createdAt,
+    messages: [],
+    lastMessage: {
+      role: chat.lastMessage?.role === 'ai' ? 'assistant' : 'user',
+      content: chat.lastMessage?.content ?? ""
+    },
+    countMessages: chat.countMessages
+  }));
 };
 
 /**
@@ -226,12 +243,26 @@ const fetchChatData = async (): Promise<Chat[]> => {
  * @author Cristono Wijaya
  */
 const fetchSingleChatData = async (chatId: string): Promise<Chat | undefined> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const chat = dummyData.find(chat => chat.id === chatId);
-      resolve(chat);
-    }, 500);
-  });
+  const response = await api.get(`/chat/chat-detail/${chatId}`);
+  const chat = response.data.data;
+  return {
+    id: chat._id,
+    name: chat.name,
+    description: chat.description,
+    storageId: chat.storageId,
+    storageName: chat.storageName,
+    createdAt: chat.createdAt,
+    messages: chat.chatMessages.map((msg:any) => {
+      return {
+        id: msg.id,
+        content: msg.content,
+        role: msg.role === 'ai' ? 'assistant' : 'user',
+        timestamp: msg.createdAt
+      };
+    }) ?? [],
+    lastMessage: chat.lastMessage ?? "",
+    countMessages: chat.countMessages
+  }
 };
 
 /**
@@ -241,19 +272,21 @@ const fetchSingleChatData = async (chatId: string): Promise<Chat | undefined> =>
  * @author Cristono Wijaya
  */
 const addChat = async (newChat: Omit<Chat, 'id' | 'createdAt' | 'messages' | 'lastMessage' | 'countMessages'>): Promise<Chat> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const chat: Chat = {
-        ...newChat,
-        id: `chat-${Date.now()}`,
-        createdAt: new Date().toISOString().split('T')[0],
-        messages: [],
-        countMessages: 0,
-        lastMessage: {role: 'assistant', content: ''},
-      };
-      resolve(chat);
-    }, 500);
+  const response = await api.post('/chat/create-chat', {
+    name: newChat.name,
+    description: newChat.description,
+    storageId: newChat.storageId
   });
+  return {
+    id: response.data.data._id,
+    name: response.data.data.name,
+    description: response.data.data.description,
+    storageId: response.data.data.storageId,
+    storageName: newChat.storageName,
+    createdAt: response.data.data.createdAt,
+    messages: [],
+    countMessages: 0
+  }
 };
 
 /**
@@ -264,17 +297,17 @@ const addChat = async (newChat: Omit<Chat, 'id' | 'createdAt' | 'messages' | 'la
  * @author Cristono Wijaya
  */
 const sendMessage = async (chatId: string, content: string): Promise<Message> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const message: Message = {
-        id: `msg-${Date.now()}`,
-        content,
-        role: 'user',
-        timestamp: new Date().toISOString()
-      };
-      resolve(message);
-    }, 500);
+  const response = await api.post(`/chat/chat-response`, {
+    chatId,
+    query: content
   });
+
+  return {
+    id: response.data._id,
+    content: response.data.content,
+    role: 'assistant' ,
+    timestamp: response.data.createdAt
+  };
 };
 
 /**
@@ -306,15 +339,20 @@ const aiReply = async (chatId: string, content: string): Promise<Message> => {
  * @author Cristono Wijaya
  */
 const editChat = async (chatId: string, updatedData: { name: string; description: string }): Promise<Chat> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const chatIndex = dummyData.findIndex(chat => chat.id === chatId);
-      if (chatIndex !== -1) {
-        dummyData[chatIndex] = { ...dummyData[chatIndex], ...updatedData };
-        resolve(dummyData[chatIndex]);
-      }
-    }, 500);
+  const response = await api.put(`/chat/update-chat/${chatId}`, {
+    name: updatedData.name,
+    description: updatedData.description
   });
+  return {
+    id: response.data.data._id,
+    name: response.data.data.name,
+    description: response.data.data.description,
+    storageId: response.data.data.storageId,
+    storageName: updatedData.name, // Storage name is not updated here
+    createdAt: response.data.data.createdAt,
+    messages: [],
+    countMessages: 0
+  };
 };
 
 /**
@@ -324,15 +362,7 @@ const editChat = async (chatId: string, updatedData: { name: string; description
  * @author Cristono Wijaya
  */
 const deleteChat = async (chatId: string): Promise<void> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const chatIndex = dummyData.findIndex(chat => chat.id === chatId);
-      if (chatIndex !== -1) {
-        dummyData.splice(chatIndex, 1);
-      }
-      resolve();
-    }, 500);
-  });
+  await api.delete(`/chat/delete-chat/${chatId}`);
 };
 
 /**
@@ -345,19 +375,20 @@ export const useFetchChatData = () => {
   const setChats = useChat((state) => state.setChats);
   const setLoading = useChat((state) => state.setLoading);
   const isLoading = useChat((state) => state.isLoading);
-
-  useSWR<Chat[]>('chats', fetchChatData, {
+  console.log("Fetching chat data with SWR...");
+  const { data } = useSWR<Chat[]>('chats', fetchChatData, {
     suspense: true,
     fallback: [],
     fallbackData: [],
     refreshInterval: 0,
     revalidateOnFocus: false,
     onSuccess: (data) => {
+      console.log("Chat data fetched:", data);
       setChats(data);
       setLoading(false);
     }
   });
-
+  console.log(data);
   return { 
     data: chats, 
     isLoading 

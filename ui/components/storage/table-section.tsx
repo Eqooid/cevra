@@ -47,7 +47,7 @@ export default function TableSection() {
             onCheckedChange={(value) => {
               table.toggleAllPageRowsSelected(!!value);
               if (value) {
-                const allPageIds = table.getRowModel().rows.map(row => row.original.id);
+                const allPageIds = table.getRowModel().rows.map(row => row.original._id);
                 setSelectedStorage(allPageIds);
               } else {
                 setSelectedStorage([]);
@@ -59,11 +59,11 @@ export default function TableSection() {
       },
       cell: ({ row }) => (
         <Checkbox 
-          checked={row.getIsSelected() && selectedStorage.indexOf(row.original.id) != -1}
+          checked={row.getIsSelected() && selectedStorage.indexOf(row.original._id) != -1}
           onCheckedChange={(value) => {
             row.toggleSelected(!!value);
             const currentSelected = selectedStorage;
-            const rowId = row.original.id;
+            const rowId = row.original._id;
             if (value) {
               if (!currentSelected.includes(rowId)) {
                 setSelectedStorage([...currentSelected, rowId]);
@@ -91,18 +91,6 @@ export default function TableSection() {
     {
       accessorKey: "description",
       header: "Description",
-    },
-    {
-      accessorKey: "usedSpace",
-      header: "Used Space",
-      cell: ({ row }) => {
-        return (
-          <div>
-            <IconDisc className="inline mr-2 mb-1 h-4 w-4 text-muted-foreground"/>
-            {row.getValue("usedSpace")}
-          </div>
-        );
-      }
     },
     {
       accessorKey: "inProgress",
@@ -187,13 +175,13 @@ export default function TableSection() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-32">
               <DropdownMenuItem onClick={() => {
-                setDataEdit({ name: row.original.name, description: row.original.description, id: row.original.id });
+                setDataEdit({ name: row.original.name, description: row.original.description, id: row.original._id });
                 toggleModalEdit();
               }}>
                 <IconPencil className="inline h-4 w-4 text-muted-foreground"/>
                 Edit
               </DropdownMenuItem>
-               <Link href={`/storage/${row.original.id}`} className="w-full">
+               <Link href={`/storage/${row.original._id}`} className="w-full">
               <DropdownMenuItem>
                
                 <IconInfoCircle className="inline h-4 w-4 text-muted-foreground"/>
@@ -204,7 +192,7 @@ export default function TableSection() {
               <DropdownMenuSeparator />
               {}
               <DropdownMenuItem variant="destructive" onClick={() => {
-                setData({ name: row.original.name, id: row.original.id });
+                setData({ name: row.original.name, id: row.original._id });
                 toggleModal();
               }}> 
                 <IconTrash className="inline h-4 w-4 text-muted-foreground"/>

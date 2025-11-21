@@ -23,19 +23,28 @@ export function ChatBox() {
   
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (smooth = false) => {
+    if (smooth) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    } else {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, []);
+    if (chat) {
+      scrollToBottom(false);
+    }
+  }, [chat, chat?.messages]);
 
   const handleSend = () => {
     if (!inputValue.trim() || !chat) return;
     sendingMessage(inputValue, () => {
-      scrollToBottom();
+      scrollToBottom(true);
     });
     setInputValue('');
   };
@@ -82,7 +91,7 @@ export function ChatBox() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {chat.messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="text-muted-foreground mb-2">No messages yet</div>
@@ -92,9 +101,9 @@ export function ChatBox() {
           </div>
         ) : (
           <>
-            {chat.messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
-            ))}
+            {chat.messages.map((message) => {
+              return <MessageBubble key={message.id} message={message} />
+            })}
             {isStreaming && (
               <div className="flex justify-start">
                 <Card className="max-w-[80%] p-3 bg-muted">

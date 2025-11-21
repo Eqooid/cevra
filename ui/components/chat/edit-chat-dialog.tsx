@@ -88,7 +88,7 @@ export default function EditChatDialog(props: Pick<DialogState, "isOpenEdit" | "
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
-              Name
+              Name <span className="text-destructive">*</span>
             </Label>
             <Input
               id="name"

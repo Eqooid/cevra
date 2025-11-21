@@ -81,7 +81,10 @@ export default function EditDialog(props: Pick<DialogState, "isOpenEdit" | "data
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Storage Name</Label>
+            <Label htmlFor="name">
+              Storage Name
+              <span className="text-destructive">*</span>
+            </Label>
             <Input 
               value={form.name} 
               id="name" 

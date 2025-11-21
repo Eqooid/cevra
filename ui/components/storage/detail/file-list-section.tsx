@@ -17,6 +17,8 @@ import {
   DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import DeleteDialog from "./delete-dialog";
+import { useDeleteStorageItemDialogState } from "./delete-dialog";
 
 /**
  * Returns a Badge component based on the file status.
@@ -71,6 +73,12 @@ function getStatusBadge(status: string) {
 export default function FileListSection({ id } : { id: string }) {
   
   const { data } = useFetchStorageFiles(id);
+  const { 
+    data:deleteData, 
+    setData:setDeleteData,
+    isOpen:deleteIsOpen,
+    toggleModal:toggleDeleteModal 
+  } = useDeleteStorageItemDialogState();
   const setIsUploadOpen = useStorageFile((state) => state.toggleModal);
 
   const filesColumns: ColumnDef<FileItem>[] = [
@@ -130,7 +138,16 @@ export default function FileListSection({ id } : { id: string }) {
               <IconDownload className="w-4 h-4 mr-2" />
               Download
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-red-500 dark:text-red-400">
+            <DropdownMenuItem className="text-red-500 dark:text-red-400"
+              onClick={() => {
+                setDeleteData({ 
+                  name: row.original.name,
+                  storageId: id,
+                  itemId: row.original._id 
+                });
+                toggleDeleteModal();
+              }}
+            >
               <IconTrash className="w-4 h-4 mr-2 text-red-500 dark:text-red-400" />
               Delete
             </DropdownMenuItem>
@@ -143,6 +160,9 @@ export default function FileListSection({ id } : { id: string }) {
 
   return (
     <>
+      <DeleteDialog isOpen={deleteIsOpen} 
+        toggleModal={toggleDeleteModal}
+        data={deleteData}/>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
@@ -152,17 +172,11 @@ export default function FileListSection({ id } : { id: string }) {
               <Badge variant="secondary">{data.length} items</Badge>
             </div>
             <div className="flex items-center space-x-2">
-              <Button 
-                size="sm" 
-                variant="outline"
+              <Button size="sm" 
                 onClick={() => setIsUploadOpen(true)}
               >
-                <IconUpload className="w-4 h-4 mr-2" />
+                <IconUpload className="w-4 h-4 mr-1" />
                 Upload File
-              </Button>
-              <Button size="sm">
-                <IconDownload className="w-4 h-4 mr-2" />
-                Download All
               </Button>
             </div>
           </CardTitle>

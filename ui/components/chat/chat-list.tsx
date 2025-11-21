@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { PlusIcon, EditIcon, TrashIcon } from 'lucide-react';
+import { IconDatabase } from "@tabler/icons-react"
 import useChat, { Chat } from '@/hooks/use-chat';
 import { Skeleton } from '../ui/skeleton';
 import React from 'react';
@@ -129,7 +130,7 @@ export function ChatList() {
                   
                   <div className="flex items-center justify-between">
                     <Badge variant="outline" className="text-xs">
-                      {chat.storageName}
+                       <IconDatabase/> {chat.storageName}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {chat.countMessages} messages

@@ -96,7 +96,9 @@ export default function HeaderSection() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Storage Name</Label>
+                <Label htmlFor="name">
+                  Storage Name <span className="text-destructive">*</span>
+                </Label>
                 <Input id="name" name="name" onChange={handleChange} placeholder="Enter storage name"/>
               </div>
               <div className="grid gap-2">

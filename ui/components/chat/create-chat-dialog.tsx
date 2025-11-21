@@ -19,7 +19,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { CheckIcon, ChevronDownIcon } from 'lucide-react';
+import { IconChevronDown } from "@tabler/icons-react"
+import { CheckIcon } from 'lucide-react';
 import { Storage, useFetchStorage } from '@/hooks/use-storage';
 import useChat from '@/hooks/use-chat';
 
@@ -89,7 +90,6 @@ export function CreateChatDialog() {
       description: description.trim(),
       storageId: selectedStorage!.id,
       storageName: selectedStorage!.name,
-      
     })
 
     handleReset();
@@ -164,16 +164,16 @@ export function CreateChatDialog() {
                       {loading ? 'Loading storages...' : 'Select storage...'}
                     </span>
                   )}
-                  <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <IconChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-full min-w-[350px]">
                 {storages.map((storage: Storage) => (
                   <DropdownMenuItem
-                    key={storage.id}
+                    key={storage._id}
                     onClick={() => {
                       setSelectedStorage({
-                        id: storage.id,
+                        id: storage._id,
                         name: storage.name
                       });
                       if (errors.storage) {
@@ -191,10 +191,8 @@ export function CreateChatDialog() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {storage.usedSpace}
-                        </Badge>
-                        {selectedStorage?.id === storage.id && (
+                        
+                        {selectedStorage?.id === storage._id && (
                           <CheckIcon className="h-4 w-4 text-primary" />
                         )}
                       </div>

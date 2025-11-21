@@ -4,7 +4,6 @@ import { Separator } from "@/components/ui/separator";
 import { 
   IconDatabase, 
   IconCalendar,
-  IconDisc,
   IconProgressCheck,
   IconAlertTriangle,
 } from "@tabler/icons-react";
@@ -31,16 +30,6 @@ export default function OverviewSection() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-              <IconDisc className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Used Space</p>
-              <p className="text-lg font-semibold">{data?.usedSpace}</p>
-            </div>
-          </div>
-          
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
               <IconProgressCheck className="w-5 h-5 text-green-600 dark:text-green-400" />
