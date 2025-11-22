@@ -14,7 +14,7 @@ import { IconX, IconDeviceFloppy } from "@tabler/icons-react";
 import { create } from "zustand";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /**
  * DialogState defines the structure of the state managed by the edit storage dialog.
@@ -55,16 +55,54 @@ export default function EditDialog(props: Pick<DialogState, "isOpenEdit" | "data
     name: props.dataEdit?.name || "",
     description: props.dataEdit?.description || ""
   });
+  const [errors, setErrors] = useState<{
+    name?: string;
+  }>({});
+
+  // Update form when dataEdit changes
+  useEffect(() => {
+    if (props.dataEdit) {
+      setForm({
+        name: props.dataEdit.name || "",
+        description: props.dataEdit.description || ""
+      });
+      setErrors({});
+    }
+  }, [props.dataEdit]);
 
   const handleInputChange = (field: 'name' | 'description', value: string) => {
     setForm(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // Clear error when user starts typing
+    if (field === 'name' && errors.name) {
+      setErrors(prev => ({ ...prev, name: undefined }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+
+    if (!form.name.trim()) {
+      newErrors.name = 'Storage name is required';
+    } else if (form.name.trim().length < 2) {
+      newErrors.name = 'Storage name must be at least 2 characters long';
+    } else if (form.name.trim().length > 50) {
+      newErrors.name = 'Storage name cannot exceed 50 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleEdit = async () => {
-    if (props.dataEdit && form.name.trim()) {
+    if (!validateForm()) {
+      return;
+    }
+
+    if (props.dataEdit) {
       await update(props.dataEdit.id, form.name.trim(), form.description.trim());
       props.toggleModalEdit();
     }
@@ -91,7 +129,11 @@ export default function EditDialog(props: Pick<DialogState, "isOpenEdit" | "data
               name="name" 
               placeholder="Enter storage name"
               onChange={(e) => handleInputChange('name', e.target.value)}
+              className={errors.name ? 'border-destructive' : ''}
             />
+            {errors.name && (
+              <span className="text-sm text-destructive">{errors.name}</span>
+            )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>
@@ -109,7 +151,11 @@ export default function EditDialog(props: Pick<DialogState, "isOpenEdit" | "data
             <IconX className="h-4 w-4"/>
             Cancel
           </Button>
-          <Button variant="default" onClick={handleEdit}>   
+          <Button 
+            variant="default" 
+            onClick={handleEdit}
+            disabled={!form.name.trim()}
+          >   
             <IconDeviceFloppy className="h-4 w-4"/>
             Save Changes
           </Button>

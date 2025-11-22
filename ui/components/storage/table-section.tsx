@@ -156,6 +156,30 @@ export default function TableSection() {
     {
       accessorKey: "createdAt",
       header: "Created At",
+      cell: ({ row }) => {
+        const createdAt = row.getValue("createdAt") as string;
+        const date = new Date(createdAt);
+        
+        // Format the date to be more readable
+        const formattedDate = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        
+        const formattedTime = date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        return (
+          <div className="text-sm">
+            <div className="font-medium">{formattedDate}</div>
+            <div className="text-muted-foreground">{formattedTime}</div>
+          </div>
+        );
+      }
     },
     {
       id: "actions",

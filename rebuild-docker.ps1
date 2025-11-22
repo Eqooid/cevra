@@ -1,15 +1,16 @@
-# PowerShell script to rebuild Docker containers with updated Qdrant version
+# PowerShell script to rebuild Docker containers with updated dependencies
 Write-Host "Stopping existing containers..." -ForegroundColor Yellow
 docker-compose down
 
-Write-Host "Removing Qdrant volume to ensure clean start..." -ForegroundColor Yellow
-docker volume rm cevra_qdrant_data -f
+Write-Host "Removing old images to ensure fresh builds..." -ForegroundColor Yellow
+docker image prune -f
 
-Write-Host "Pulling latest Qdrant image..." -ForegroundColor Yellow
-docker pull qdrant/qdrant:v1.11.0
+Write-Host "Pulling latest base images..." -ForegroundColor Yellow
+docker pull qdrant/qdrant:v1.15.1
+docker pull node:24-alpine
 
-Write-Host "Building and starting containers..." -ForegroundColor Yellow
-docker-compose up --build -d
+Write-Host "Building and starting containers with no cache..." -ForegroundColor Yellow
+docker-compose up --build --no-cache -d
 
 Write-Host "Waiting for services to start..." -ForegroundColor Yellow
 Start-Sleep -Seconds 10

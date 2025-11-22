@@ -153,6 +153,38 @@ export function ChatBox() {
 }
 
 /**
+ * Formats timestamp to show time only for today's messages, and date + time for older messages
+ * @param {string | Date} timestamp - The timestamp to format
+ * @return {string} The formatted timestamp string
+ */
+function formatMessageTimestamp(timestamp: string | Date): string {
+  const messageDate = new Date(timestamp);
+  const today = new Date();
+  
+  // Check if the message is from today
+  const isToday = messageDate.toDateString() === today.toDateString();
+  
+  if (isToday) {
+    // Show only time for today's messages
+    return messageDate.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  } else {
+    // Show date and time for older messages
+    const day = messageDate.getDate().toString().padStart(2, '0');
+    const month = (messageDate.getMonth() + 1).toString().padStart(2, '0');
+    const year = messageDate.getFullYear();
+    const time = messageDate.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    return `${day}/${month}/${year} - ${time}`;
+  }
+}
+
+/**
  * MessageBubble component that displays individual chat messages.
  * @param {Object} props - The component props.
  * @param {Message} props.message - The message to display.
@@ -177,10 +209,7 @@ function MessageBubble({ message }: { message: Message }) {
               ? 'text-primary-foreground/70' 
               : 'text-muted-foreground'
           }`}>
-            {new Date(message.timestamp).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
+            {formatMessageTimestamp(message.timestamp)}
           </div>
         </div>
       </Card>

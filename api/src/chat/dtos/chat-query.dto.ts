@@ -1,3 +1,6 @@
+import { IsString, IsNotEmpty, Length, IsMongoId } from 'class-validator';
+import { Transform } from 'class-transformer';
+
 /**
  * DTO for querying chat messages.
  * Includes the search query and the chat ID.
@@ -10,6 +13,14 @@
  * @author Cristono Wijaya
  */
 export class ChatQueryDto {
-  query: string
-  chatId: string
+  @IsString()
+  @IsNotEmpty()
+  @Length(1, 1000, { message: 'Query must be between 1 and 1000 characters' })
+  @Transform(({ value }) => value?.trim())
+  query: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsMongoId({ message: 'Chat ID must be a valid MongoDB ObjectId' })
+  chatId: string;
 }

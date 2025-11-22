@@ -144,7 +144,7 @@ export class ChatService {
             createdAt: 1
           }
         }
-      ]).exec();
+      ]).sort({ createdAt: -1 }).exec();
       
       return data;
     }

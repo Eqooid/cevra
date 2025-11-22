@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { CardDescription, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -40,16 +39,59 @@ export default function HeaderSection() {
     description: '',
   });
 
+  const [errors, setErrors] = useState<{
+    name?: string;
+  }>({});
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setForm({
       ...form,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    
+    // Clear error when user starts typing
+    if (name === 'name' && errors.name) {
+      setErrors(prev => ({ ...prev, name: undefined }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+
+    if (!form.name.trim()) {
+      newErrors.name = 'Storage name is required';
+    } else if (form.name.trim().length < 2) {
+      newErrors.name = 'Storage name must be at least 2 characters long';
+    } else if (form.name.trim().length > 50) {
+      newErrors.name = 'Storage name cannot exceed 50 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    add(form.name, form.description);
-  }
+    if (!validateForm()) {
+      return;
+    }
+
+    await add(form.name.trim(), form.description.trim());
+    
+    setForm({ name: '', description: '' });
+    setErrors({});
+    setIsDialogOpen(false);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      setForm({ name: '', description: '' });
+      setErrors({});
+    }
+    setIsDialogOpen(open);
+  };
 
   return (
     <>
@@ -80,7 +122,7 @@ export default function HeaderSection() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Dialog>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button variant="default" className="mr-4" disabled={isLoading}>
               <PlusIcon/>
@@ -99,26 +141,42 @@ export default function HeaderSection() {
                 <Label htmlFor="name">
                   Storage Name <span className="text-destructive">*</span>
                 </Label>
-                <Input id="name" name="name" onChange={handleChange} placeholder="Enter storage name"/>
+                <Input 
+                  id="name" 
+                  name="name" 
+                  value={form.name}
+                  onChange={handleChange} 
+                  placeholder="Enter storage name"
+                  className={errors.name ? 'border-destructive' : ''}
+                />
+                {errors.name && (
+                  <span className="text-sm text-destructive">{errors.name}</span>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="description">Description</Label>
-                <Input id="description" name="description" onChange={handleChange} placeholder="Enter storage description"/>
+                <Input 
+                  id="description" 
+                  name="description" 
+                  value={form.description}
+                  onChange={handleChange} 
+                  placeholder="Enter storage description"
+                />
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">
-                  <IconX className="h4 w-4"/>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <DialogClose asChild>
-                <Button type="button" onClick={handleSubmit}>
-                  <IconPlus className="h-4 w-4"/>
-                  Add Storage
-                </Button>
-              </DialogClose>
+              <Button variant="outline" onClick={() => handleDialogClose(false)}>
+                <IconX className="h-4 w-4"/>
+                Cancel
+              </Button>
+              <Button 
+                type="button" 
+                onClick={handleSubmit}
+                disabled={!form.name.trim()}
+              >
+                <IconPlus className="h-4 w-4"/>
+                Add Storage
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

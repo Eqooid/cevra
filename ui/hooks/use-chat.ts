@@ -130,14 +130,13 @@ const useChat = create<ChatState>((set, get) => ({
         chat.id === selectedChat.id
           ? { ...chat, lastMessage: { 
             content: userMessage.content,
-            role: "user"
+            role: "assistant"
           }, countMessages: chat.countMessages + 1 }
           : chat
       )
     }));
 
     if (callback) {
-      // Use setTimeout to ensure callback runs after state update is complete
       setTimeout(() => callback(), 0);
     }
   },

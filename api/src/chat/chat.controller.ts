@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Res } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ChatService } from './chat.service';
 import { SearchQueryDto } from './dtos/search-query.dto';
-import { SimilarityValueDto } from './dtos/similarity-value.dto';
 import { Response } from 'express';
 import { ChatQueryDto } from './dtos/chat-query.dto';
 import { CreateChatDto } from './dtos/create-chat.dto';
 import { UpdateChatDto } from './dtos/update-chat.dto';
+import { ParseObjectIdPipe } from '../common/pipes/parse-objectid.pipe';
 
 @Controller('chat')
 export class ChatController {
@@ -39,7 +40,7 @@ export class ChatController {
    * @author Cristono Wijaya
    */
   @Get('chat-detail/:id')
-  async getChatDetail(@Param('id') id: string) {
+  async getChatDetail(@Param('id', new ParseObjectIdPipe()) id: string) {
     try {
       const chat = await this.chatService.getChatById(id);
       return {
@@ -85,7 +86,7 @@ export class ChatController {
    * @author Cristono Wijaya
    */
   @Put('update-chat/:id')
-  async updateChat(@Param('id') id: string, @Body() body: Partial<UpdateChatDto>) {
+  async updateChat(@Param('id', new ParseObjectIdPipe()) id: string, @Body() body: Partial<UpdateChatDto>) {
     try {
       const chat = await this.chatService.updateChat(id, body);
       return {
@@ -107,7 +108,7 @@ export class ChatController {
    * @author Cristono Wijaya
    */
   @Delete('delete-chat/:id')
-  async deleteChat(@Param('id') id: string) {
+  async deleteChat(@Param('id', new ParseObjectIdPipe()) id: string) {
     try {
       const chat = await this.chatService.deleteChat(id);
       return {
@@ -130,6 +131,7 @@ export class ChatController {
    * @author Cristono Wijaya
    */
   @Post('similarity-search')
+  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 searches per minute
   async similaritySearch(@Body() body:SearchQueryDto): Promise<any> {
     return await this.chatService.similaritySearch(body.query, body.storageId);
   }
@@ -142,6 +144,7 @@ export class ChatController {
    * @author Cristono Wijaya
    */
   @Post('chat-response')
+  @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 chat requests per minute
   chatResponse(@Body() body:ChatQueryDto): any {
     return this.chatService.chatResponse(body.query, body.chatId);
   }
@@ -154,6 +157,7 @@ export class ChatController {
    * @author Cristono Wijaya
    */
   @Post('chat-stream')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 streaming requests per minute
   async chatStream(@Body() body:ChatQueryDto, @Res() res:Response): Promise<any> {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
