@@ -16,3 +16,18 @@ jobs:
         run: |
           ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
+  Testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v5
+      - name: Run a sample test
+        run: |
+          echo "Running tests..."
+          # Simulate a test command
+          if [ 1 -eq 1 ]; then
+            echo "All tests passed!"
+          else
+            echo "Some tests failed."
+            exit 1
+          fi
