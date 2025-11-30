@@ -27,7 +27,7 @@ jobs:
         ports:
           - 27017:27017
         options: >-
-          --health-cmd "curl -f http://localhost:6333/health"
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'" 
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -38,7 +38,7 @@ jobs:
         ports:
           - 6333:6333
         options: >-
-          --health-cmd "curl -f http://localhost:6333/health"
+          --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:6333/health || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -60,6 +60,31 @@ jobs:
       - name: Install API dependencies
         working-directory: ./api
         run: npm ci
+
+      # Wait for services to be ready
+      - name: Wait for services
+        run: |
+          # Wait for MongoDB
+          for i in {1..30}; do
+            if mongosh --eval "db.adminCommand('ping')" --quiet; then
+              echo "MongoDB is ready!"
+              break
+            fi
+            echo "Waiting for MongoDB... ($i/30)"
+            sleep 2
+          done
+          
+          # Wait for Qdrant
+          for i in {1..30}; do
+            if curl -f http://localhost:6333/health >/dev/null 2>&1; then
+              echo "Qdrant is ready!"
+              break
+            fi
+            echo "Waiting for Qdrant... ($i/30)"
+            sleep 2
+          done
+          
+          echo "All services are ready!"
 
       # Run API Tests
       - name: Run ESLint on API
