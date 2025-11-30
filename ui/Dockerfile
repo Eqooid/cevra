@@ -30,12 +30,18 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Ensure public directory exists
+RUN mkdir -p public
+
 # Build the application
 RUN npm run build
 
 # Production stage
 FROM node:24-alpine AS production
 WORKDIR /app
+
+# Install curl for health checks
+RUN apk add --no-cache curl
 
 # Create a non-root user
 RUN addgroup -g 1001 -S nodejs
@@ -48,6 +54,9 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy built application
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Create public directory and copy contents
+RUN mkdir -p ./public
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
 # Switch to non-root user

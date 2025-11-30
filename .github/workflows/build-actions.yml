@@ -80,7 +80,7 @@ jobs:
           done
           
           echo "All services are ready!"
-      
+
       # Run Build
       - name: Run Build
         working-directory: ./api
