@@ -20,6 +20,26 @@ export interface Chat {
 }
 
 /**
+ * ChatResponse interface representing the response structure for chat data.
+ * @interface ChatResponse
+ * @author Cristono Wijaya
+ */
+export interface ChatResponse {
+  _id: string;
+  name: string;
+  description: string;
+  storageId: string;
+  storageName: string;
+  createdAt: string;
+  lastMessage?: {
+    role: string;
+    content: string;
+  };
+  countMessages: number;
+}
+   
+
+/**
  * Message interface representing a single message in a chat.
  * @interface Message
  * @author Cristono Wijaya
@@ -29,6 +49,18 @@ export interface Message {
   content: string;
   role: 'user' | 'assistant';
   timestamp: string;
+}
+
+/**
+ * MessageResponse interface representing the response structure for message data.
+ * @interface MessageResponse
+ * @author Cristono Wijaya
+ */
+export interface MessageResponse {
+  id: string;
+  content: string;
+  role: string;
+  createdAt: string;
 }
 
 /**
@@ -219,7 +251,7 @@ const useChat = create<ChatState>((set, get) => ({
  */
 const fetchChatData = async (): Promise<Chat[]> => {
   const response = await api.get('/chat/all-chats');
-  return response.data.data.map((chat: any) => ({
+  return response.data.data.map((chat: ChatResponse) => ({
     id: chat._id,
     name: chat.name,
     description: chat.description,
@@ -251,7 +283,7 @@ const fetchSingleChatData = async (chatId: string): Promise<Chat | undefined> =>
     storageId: chat.storageId,
     storageName: chat.storageName,
     createdAt: chat.createdAt,
-    messages: chat.chatMessages.map((msg:any) => {
+    messages: chat.chatMessages.map((msg:MessageResponse) => {
       return {
         id: msg.id,
         content: msg.content,
@@ -374,7 +406,7 @@ export const useFetchChatData = () => {
   const setChats = useChat((state) => state.setChats);
   const setLoading = useChat((state) => state.setLoading);
   const isLoading = useChat((state) => state.isLoading);
-  console.log("Fetching chat data with SWR...");
+
   const { data } = useSWR<Chat[]>('chats', fetchChatData, {
     suspense: true,
     fallback: [],
@@ -382,7 +414,6 @@ export const useFetchChatData = () => {
     refreshInterval: 0,
     revalidateOnFocus: false,
     onSuccess: (data) => {
-      console.log("Chat data fetched:", data);
       setChats(data);
       setLoading(false);
     }

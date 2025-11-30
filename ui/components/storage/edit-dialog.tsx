@@ -14,7 +14,7 @@ import { IconX, IconDeviceFloppy } from "@tabler/icons-react";
 import { create } from "zustand";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 /**
  * DialogState defines the structure of the state managed by the edit storage dialog.
@@ -58,17 +58,6 @@ export default function EditDialog(props: Pick<DialogState, "isOpenEdit" | "data
   const [errors, setErrors] = useState<{
     name?: string;
   }>({});
-
-  // Update form when dataEdit changes
-  useEffect(() => {
-    if (props.dataEdit) {
-      setForm({
-        name: props.dataEdit.name || "",
-        description: props.dataEdit.description || ""
-      });
-      setErrors({});
-    }
-  }, [props.dataEdit]);
 
   const handleInputChange = (field: 'name' | 'description', value: string) => {
     setForm(prev => ({

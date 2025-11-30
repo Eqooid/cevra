@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "../data-table";
 import { Checkbox } from "../ui/checkbox";
 import { 
-  IconDatabase, IconLoader, IconDisc, IconCircleCheckFilled, IconAlertTriangle, 
+  IconDatabase, IconLoader, IconCircleCheckFilled, IconAlertTriangle, 
   IconX, IconDotsVertical, IconTrash, IconPencil, IconInfoCircle 
 } from "@tabler/icons-react";
 import { Badge } from "../ui/badge";

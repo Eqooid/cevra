@@ -5,54 +5,6 @@ import useSWR from "swr";
 import { create } from "zustand";
 
 /**
- * Mock data for storage files.
- * In a real application, this data would be fetched from an API.
- * @constant {FileItem[]}
- * @author Cristono Wijaya
- */
-const mockFiles: FileItem[] = [
-  {
-    _id: "file-1",
-    name: "document.pdf",
-    size: "2.4 MB",
-    lastModified: "2023-11-01",
-    status: "completed",
-    mimeType: "application/pdf"
-  },
-  {
-    _id: "file-2",
-    name: "images.pdf",
-    size: "45.2 MB",
-    lastModified: "2023-10-28",
-    status: "completed",
-  },
-  {
-    _id: "file-3",
-    name: "backup.pdf",
-    size: "1.8 GB",
-    lastModified: "2023-10-25",
-    status: "in-progress",
-    mimeType: "application/pdf",
-  },
-  {
-    _id: "file-4",
-    name: "config.docx",
-    size: "4.2 KB",
-    lastModified: "2023-11-02",
-    status: "failed",
-    mimeType: "application/docx"
-  },
-  {
-    _id: "file-5",
-    name: "database_dump.pdf",
-    size: "856 MB",
-    lastModified: "2023-10-30",
-    status: "completed",
-    mimeType: "application/pdf"
-  }
-];
-
-/**
  * Type definition for a file item in storage.
  * @typedef {Object} FileItem
  * @property {string} id - Unique identifier for the file.
@@ -71,6 +23,20 @@ export type FileItem = {
   status: "completed" | "in-progress" | "failed";
   mimeType?: string;
 }; 
+
+/**
+ * Response interface for storage file items from the API.
+ * @interface StorageFileResponse
+ * @author Cristono Wijaya
+ */
+interface StorageFileResponse {
+  _id: string;
+  name: string;
+  size: number;
+  uploadDate: string;
+  status: string;
+  type: string;
+}
 
 /**
  * State management for storage files using Zustand.
@@ -122,7 +88,7 @@ const useStorageFile = create<StorageFileState>((set) => ({
  */
 const fetchStorageFiles = async (storageId: string): Promise<FileItem[]> => {
   const response = await api.get(`/vector-storage/storage-items/${storageId}`);
-  const data = response.data.data.map((item:any) => {
+  const data = response.data.data.map((item:StorageFileResponse) => {
     return {
       ...item,
       lastModified: new Date(item.uploadDate).toISOString().split('T')[0],

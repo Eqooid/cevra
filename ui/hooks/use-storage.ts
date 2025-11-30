@@ -183,6 +183,7 @@ const deleteStorage = async (id:string): Promise<void> => {
  */
 const bulkDeleteStorage = async (ids:string[]): Promise<void> => {
   return new Promise<void>((resolve) => {
+    console.log("Bulk deleting storages with IDs:", ids);
     resolve();
   });
 };

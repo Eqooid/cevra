@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   ColumnDef, flexRender, 
   getCoreRowModel, useReactTable,
@@ -53,24 +53,29 @@ export function DataTable<TData, TValue>({ columns, data, isLoading = false }: D
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection
-    },
-  });
+  const table = useReactTable(
+    useMemo(
+      () => ({
+        data,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        onSortingChange: setSorting,
+        getSortedRowModel: getSortedRowModel(),
+        onColumnFiltersChange: setColumnFilters,
+        getFilteredRowModel: getFilteredRowModel(),
+        onColumnVisibilityChange: setColumnVisibility,
+        onRowSelectionChange: setRowSelection,
+        state: {
+          sorting,
+          columnFilters,
+          columnVisibility,
+          rowSelection
+        },
+      }),
+      [data, columns, sorting, columnFilters, columnVisibility, rowSelection]
+    )
+  );
 
   const renderLoadingRows = () => {
     return Array.from({ length: 10 }).map((_, index) => (
