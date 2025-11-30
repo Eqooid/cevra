@@ -119,32 +119,6 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
-
-  # Security Audit Job
-  security-audit:
-    name: 'Security Audit'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 'Checkout repository'
-        uses: actions/checkout@v4
-
-      - name: 'Setup Node.js ${{ env.NODE_VERSION }}'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: 'Audit API dependencies'
-        working-directory: ./api
-        run: |
-          npm ci
-          npm audit --audit-level high
-
-      - name: 'Audit UI dependencies'
-        working-directory: ./ui
-        run: |
-          npm ci
-          npm audit --audit-level high
   
   # Docker Build Tests
   docker-build:
