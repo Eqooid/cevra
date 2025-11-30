@@ -192,14 +192,14 @@ jobs:
       - name: 'Create test environment file'
         run: |
           cat > .env << EOF
-          OPENAI_API_KEY=test-key-for-ci
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           MONGODB_URI=mongodb://admin:password123@localhost:27017/cevra?authSource=admin
           QDRANT_URL=http://localhost:6333
           EOF
 
       - name: 'Run integration tests with Docker Compose'
         run: |
-          docker-compose -f docker-compose.dev.yml up -d --build
+          docker compose -f docker-compose.dev.yml up -d --build
           sleep 30  # Wait for services to be ready
           
           # Health checks
@@ -207,4 +207,4 @@ jobs:
           curl -f http://localhost:3001 || exit 1
           
           # Cleanup
-          docker-compose -f docker-compose.dev.yml down -v
+          docker compose -f docker-compose.dev.yml down -v
