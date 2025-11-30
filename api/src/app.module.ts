@@ -21,10 +21,12 @@ import { QdrantModule } from './qdrant/qdrant.module';
       cache: true,
     }),
     // Rate limiting - 100 requests per minute per IP
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // 1 minute
-      limit: 100, // 100 requests per minute
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+    ]),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
@@ -38,7 +40,7 @@ import { QdrantModule } from './qdrant/qdrant.module';
     }),
     VectorStorageModule,
     ChatModule,
-    QdrantModule
+    QdrantModule,
   ],
   controllers: [AppController],
   providers: [

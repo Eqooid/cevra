@@ -14,7 +14,9 @@ import { Transform } from 'class-transformer';
 export class FormStorageDto {
   @IsString()
   @IsNotEmpty()
-  @Length(1, 100, { message: 'Storage name must be between 1 and 100 characters' })
+  @Length(1, 100, {
+    message: 'Storage name must be between 1 and 100 characters',
+  })
   @Transform(({ value }) => value?.trim())
   name: string;
 

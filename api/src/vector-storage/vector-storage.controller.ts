@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { VectorStorageService } from './vector-storage.service';
@@ -8,19 +18,17 @@ import { FileValidationPipe } from '../common/pipes/file-validation.pipe';
 
 @Controller('vector-storage')
 export class VectorStorageController {
-
   constructor(private readonly vectorStorageService: VectorStorageService) {}
 
   @Get('all-storages')
   async getAllStorages() {
     try {
       const storages = await this.vectorStorageService.getAllStorages();
-      return { 
+      return {
         message: 'All storages endpoint',
-        data: storages
+        data: storages,
       };
-    }
-    catch {
+    } catch {
       return { message: 'Error fetching storages' };
     }
   }
@@ -31,10 +39,9 @@ export class VectorStorageController {
       const storage = await this.vectorStorageService.getStorageById(id);
       return {
         message: 'Storage detail endpoint',
-        data: storage
+        data: storage,
       };
-    }
-    catch {
+    } catch {
       return { message: 'Error fetching storage detail' };
     }
   }
@@ -45,10 +52,9 @@ export class VectorStorageController {
       const items = await this.vectorStorageService.getFileItems(id);
       return {
         message: 'Storage items endpoint',
-        data: items
+        data: items,
       };
-    }
-    catch {
+    } catch {
       return { message: 'Error fetching storage items' };
     }
   }
@@ -57,37 +63,39 @@ export class VectorStorageController {
   async createStorage(@Body() body: FormStorageDto) {
     try {
       const storage = await this.vectorStorageService.createStorage(body);
-      return { 
+      return {
         message: 'Create storage endpoint',
-        data: storage
+        data: storage,
       };
-    }
-    catch {
+    } catch {
       return { message: 'Error creating storage' };
     }
   }
-  
+
   @Put('update-storage/:id')
-  async updateStorage(@Param('id', new ParseObjectIdPipe()) id: string, @Body() body: Partial<FormStorageDto>) {
+  async updateStorage(
+    @Param('id', new ParseObjectIdPipe()) id: string,
+    @Body() body: Partial<FormStorageDto>,
+  ) {
     try {
       const storage = await this.vectorStorageService.updateStorage(id, body);
-      return { 
+      return {
         message: 'Update storage endpoint',
-        data: storage
+        data: storage,
       };
-    }
-    catch {
+    } catch {
       return { message: 'Error updating storage' };
     }
   }
 
   @Delete('delete-storage/:storageId')
-  async deleteStorage(@Param('storageId', new ParseObjectIdPipe()) storageId: string) {
+  async deleteStorage(
+    @Param('storageId', new ParseObjectIdPipe()) storageId: string,
+  ) {
     try {
       await this.vectorStorageService.deleteStorage(storageId);
       return { message: 'Storage deleted successfully' };
-    }
-    catch {
+    } catch {
       return { message: 'Error deleting storage' };
     }
   }
@@ -95,24 +103,28 @@ export class VectorStorageController {
   @Post('upload/:id')
   @UseInterceptors(FileInterceptor('file'))
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 uploads per minute
-  upload(@UploadedFile(new FileValidationPipe()) file: Express.Multer.File, @Param('id', new ParseObjectIdPipe()) storageId: string) {
+  upload(
+    @UploadedFile(new FileValidationPipe()) file: Express.Multer.File,
+    @Param('id', new ParseObjectIdPipe()) storageId: string,
+  ) {
     try {
       console.log(storageId);
       this.vectorStorageService.uploadFile(file, storageId);
       return { message: 'Upload endpoint' };
-    }
-    catch {
+    } catch {
       return { message: 'Error uploading file' };
     }
   }
 
   @Delete('delete-item/:storageId/:itemId')
-  async deleteStorageItem(@Param('storageId', new ParseObjectIdPipe()) storageId: string, @Param('itemId', new ParseObjectIdPipe()) itemId: string) {
+  async deleteStorageItem(
+    @Param('storageId', new ParseObjectIdPipe()) storageId: string,
+    @Param('itemId', new ParseObjectIdPipe()) itemId: string,
+  ) {
     try {
       await this.vectorStorageService.deleteStorageItem(storageId, itemId);
       return { message: 'Storage item deleted successfully' };
-    }
-    catch {
+    } catch {
       return { message: 'Error deleting storage item' };
     }
   }

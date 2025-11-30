@@ -12,10 +12,10 @@
  * @author Cristono Wijaya
  */
 export class SimilarityValueDto {
-  content: string
-  source: string
-  page: number
-  fileId: string
-  storageId: string
-  score: number
+  content: string;
+  source: string;
+  page: number;
+  fileId: string;
+  storageId: string;
+  score: number;
 }

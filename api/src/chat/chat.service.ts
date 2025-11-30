@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
-import { createAgent, summarizationMiddleware } from "langchain";
+import { createAgent, summarizationMiddleware } from 'langchain';
 import { Model } from 'mongoose';
-import { MongoClient } from "mongodb";
-import * as z from "zod";
+import { MongoClient } from 'mongodb';
+import * as z from 'zod';
 import { Storage } from 'schemas/storage.schema';
 import { QdrantService } from 'src/qdrant/qdrant.service';
 import { SimilarityValueDto } from './dtos/similarity-value.dto';
 import { tool } from '@langchain/core/tools';
-import { MongoDBSaver } from "@langchain/langgraph-checkpoint-mongodb";
+import { MongoDBSaver } from '@langchain/langgraph-checkpoint-mongodb';
 import { QdrantVectorStore } from '@langchain/qdrant';
 import { CreateChatDto } from './dtos/create-chat.dto';
 import { Chat } from 'schemas/chat.schema';
@@ -25,7 +25,6 @@ import { ChatDetailDto } from './dtos/chat-detail.dto';
  */
 @Injectable()
 export class ChatService {
-
   /**
    * Checkpointer for saving agent state to MongoDB.
    * @private
@@ -46,7 +45,8 @@ export class ChatService {
     private readonly configService: ConfigService,
     @InjectModel(Storage.name) private readonly storageModel: Model<Storage>,
     @InjectModel(Chat.name) private readonly chatModel: Model<Chat>,
-    @InjectModel(ChatMessage.name) private readonly chatMessageModel: Model<ChatMessage>
+    @InjectModel(ChatMessage.name)
+    private readonly chatMessageModel: Model<ChatMessage>,
   ) {
     const mongoUri = this.configService.get<string>('MONGODB_URI');
     const client = new MongoClient(mongoUri);
@@ -73,23 +73,27 @@ export class ChatService {
     const retrieveSchema = z.object({ query: z.string() });
     return tool(
       async ({ query }) => {
-        const retrievedDocs = await vectorStore.similaritySearchWithScore(query, 2);
+        const retrievedDocs = await vectorStore.similaritySearchWithScore(
+          query,
+          2,
+        );
         const serialized = retrievedDocs
           .map(
-            ([doc]) => `Source: ${doc.metadata.source}\nContent: ${doc.pageContent}`  
+            ([doc]) =>
+              `Source: ${doc.metadata.source}\nContent: ${doc.pageContent}`,
           )
-          .join("\n");
+          .join('\n');
         return [serialized, retrievedDocs];
       },
       {
-        name: "retrieve",
-        description: "Retrieve information related to a query.",
+        name: 'retrieve',
+        description: 'Retrieve information related to a query.',
         schema: retrieveSchema,
-        responseFormat: "content_and_artifact",
-      }
+        responseFormat: 'content_and_artifact',
+      },
     );
   }
-  
+
   /**
    * Retrieves all chat sessions.
    * @returns A promise that resolves to an array of Chat objects.
@@ -97,58 +101,60 @@ export class ChatService {
    */
   public async getAllChats(): Promise<ChatDto[]> {
     try {
-      const data = await this.chatModel.aggregate([
-        {
-          $lookup: {
-            from: 'vector_storage',
-            localField: 'storageId',
-            foreignField: '_id',
-            as: 'storage'
-          }
-        },
-        {
-          $unwind: '$storage'
-        },
-        {
-          $lookup: {
-            from: 'chat_message',
-            localField: '_id',
-            foreignField: 'chatId',
-            as: 'chatMessages'
-          }
-        },
-        { 
-          $addFields: {
-            countMessages: { $size: '$chatMessages' },
-            lastMessage: {
-              $cond: {
-                if: { $gt: [{ $size: '$chatMessages' }, 0] },
-                then: { 
-                  role: { $arrayElemAt: ['$chatMessages.role', -1] },
-                  content: { $arrayElemAt: ['$chatMessages.content', -1] }
+      const data = await this.chatModel
+        .aggregate([
+          {
+            $lookup: {
+              from: 'vector_storage',
+              localField: 'storageId',
+              foreignField: '_id',
+              as: 'storage',
+            },
+          },
+          {
+            $unwind: '$storage',
+          },
+          {
+            $lookup: {
+              from: 'chat_message',
+              localField: '_id',
+              foreignField: 'chatId',
+              as: 'chatMessages',
+            },
+          },
+          {
+            $addFields: {
+              countMessages: { $size: '$chatMessages' },
+              lastMessage: {
+                $cond: {
+                  if: { $gt: [{ $size: '$chatMessages' }, 0] },
+                  then: {
+                    role: { $arrayElemAt: ['$chatMessages.role', -1] },
+                    content: { $arrayElemAt: ['$chatMessages.content', -1] },
+                  },
+                  else: null,
                 },
-                else: null
-              }
-            }
-          } 
-        },
-        {
-          $project: {
-            _id: '$_id',
-            name: 1,
-            description: 1,
-            storageId: 1,
-            storageName: '$storage.name',
-            countMessages: 1,
-            lastMessage: 1,
-            createdAt: 1
-          }
-        }
-      ]).sort({ createdAt: -1 }).exec();
-      
+              },
+            },
+          },
+          {
+            $project: {
+              _id: '$_id',
+              name: 1,
+              description: 1,
+              storageId: 1,
+              storageName: '$storage.name',
+              countMessages: 1,
+              lastMessage: 1,
+              createdAt: 1,
+            },
+          },
+        ])
+        .sort({ createdAt: -1 })
+        .exec();
+
       return data;
-    }
-    catch (error) {
+    } catch (error) {
       throw new Error(`Failed to get chats: ${error.message}`);
     }
   }
@@ -162,8 +168,7 @@ export class ChatService {
   public async deleteChat(chatId: string): Promise<Chat> {
     try {
       return this.chatModel.findByIdAndDelete(chatId).exec();
-    }
-    catch (error) {
+    } catch (error) {
       throw new Error(`Failed to delete chat: ${error.message}`);
     }
   }
@@ -183,11 +188,10 @@ export class ChatService {
       const newChat = new this.chatModel({
         name: data.name,
         description: data.description,
-        storageId: storage._id
+        storageId: storage._id,
       });
       return newChat.save();
-    }
-    catch (error) {
+    } catch (error) {
       throw new Error(`Failed to create chat: ${error.message}`);
     }
   }
@@ -200,9 +204,12 @@ export class ChatService {
    */
   public async getChatById(chatId: string): Promise<ChatDetailDto> {
     try {
-      const data:any = await this.chatModel.findOne({
-        _id: chatId
-      }).populate("chat_messages").exec();
+      const data: any = await this.chatModel
+        .findOne({
+          _id: chatId,
+        })
+        .populate('chat_messages')
+        .exec();
 
       return {
         _id: data._id,
@@ -210,16 +217,15 @@ export class ChatService {
         description: data.description,
         storageId: data.storageId,
         createdAt: data.createdAt,
-        chatMessages: data.chat_messages.map(msg => ({
+        chatMessages: data.chat_messages.map((msg) => ({
           id: msg.id,
           chatId: msg.chatId,
           role: msg.role,
           content: msg.content,
-          createdAt: msg.createdAt
-        }))
+          createdAt: msg.createdAt,
+        })),
       };
-    }
-    catch (error) {
+    } catch (error) {
       throw new Error(`Failed to get chat: ${error.message}`);
     }
   }
@@ -231,11 +237,15 @@ export class ChatService {
    * @returns The updated Chat document.
    * @author Cristono Wijaya
    */
-  public async updateChat(chatId: string, data: Partial<UpdateChatDto>): Promise<Chat> {
+  public async updateChat(
+    chatId: string,
+    data: Partial<UpdateChatDto>,
+  ): Promise<Chat> {
     try {
-      return this.chatModel.findByIdAndUpdate(chatId, data, { new: true }).exec();
-    }
-    catch (error) {
+      return this.chatModel
+        .findByIdAndUpdate(chatId, data, { new: true })
+        .exec();
+    } catch (error) {
       throw new Error(`Failed to update chat: ${error.message}`);
     }
   }
@@ -247,16 +257,21 @@ export class ChatService {
    * @returns An array of SimilarityValueDto containing similar documents and their scores.
    * @author Cristono Wijaya
    */
-  public async similaritySearch(query: string, storageId: string): Promise<any> {
+  public async similaritySearch(
+    query: string,
+    storageId: string,
+  ): Promise<any> {
     try {
       const storage = await this.storageModel.findById(storageId);
       if (!storage) {
         throw new Error(`Storage not found for ID: ${storageId}`);
       }
-      const vectorStore = await this.qdrantService.getVectorStore(storage.qdrantCollectionName);
+      const vectorStore = await this.qdrantService.getVectorStore(
+        storage.qdrantCollectionName,
+      );
       const response = await vectorStore.similaritySearchWithScore(query, 5);
 
-      return response.map(resizeTo => {
+      return response.map((resizeTo) => {
         const [doc, score] = resizeTo;
         return {
           content: doc.pageContent,
@@ -264,13 +279,12 @@ export class ChatService {
           page: doc.metadata.page,
           fileId: doc.metadata.fileId,
           storageId: doc.metadata.storageId,
-          score
+          score,
         };
       });
-    }
-    catch (error) {
+    } catch (error) {
       throw new Error(`Failed to perform similarity search: ${error.message}`);
-    } 
+    }
   }
 
   /**
@@ -282,105 +296,115 @@ export class ChatService {
    */
   public async chatResponse(query: string, chatId: string): Promise<any> {
     try {
-        const chat = await this.chatModel.findById(chatId);
+      const chat = await this.chatModel.findById(chatId);
       if (!chat) {
         throw new Error('Chat not found');
       }
-      
+
       const storage = await this.storageModel.findById(chat.storageId);
       if (!storage) {
         throw new Error('Storage not found');
       }
-      const vectorStore = await this._getVectorStore(storage.qdrantCollectionName);
+      const vectorStore = await this._getVectorStore(
+        storage.qdrantCollectionName,
+      );
       const retrieve = this._retriveTool(vectorStore);
 
       const tools = [retrieve];
-      const systemPrompt =`
+      const systemPrompt = `
         You are an AI assistant that helps users by providing information based on the documents retrieved from the storage.
         Use the retrieved documents to answer the user's query as accurately as possible.
       `;
-    
+
       const agent = createAgent({
-        model: "gpt-4o-mini",
+        model: 'gpt-4o-mini',
         tools,
         systemPrompt,
         checkpointer: this._checkpointer,
-        middleware: [summarizationMiddleware({ 
-          model: "gpt-4o-mini",  
-          messagesToKeep: 5 
-        })]
+        middleware: [
+          summarizationMiddleware({
+            model: 'gpt-4o-mini',
+            messagesToKeep: 5,
+          }),
+        ],
       });
-      
-      let userInput = {
-        messages: [{ role: "user", content: query }]
-      }
+
+      const userInput = {
+        messages: [{ role: 'user', content: query }],
+      };
 
       this.chatMessageModel.create({
         chatId: chat._id,
         role: 'user',
-        content: query
+        content: query,
       });
 
       const result = await agent.invoke(userInput, {
-        configurable: { thread_id: chatId }
+        configurable: { thread_id: chatId },
       });
 
       const aiResponse = this.chatMessageModel.create({
         chatId: chat._id,
         role: result.messages[result.messages.length - 1].type,
-        content: result.messages[result.messages.length - 1].content
+        content: result.messages[result.messages.length - 1].content,
       });
-      
+
       return aiResponse;
-    }
-    catch (error) {
+    } catch (error) {
       throw new Error(`Failed to get chat response: ${error.message}`);
     }
   }
-  
+
   /**
-  * Generates a streaming chat response based on the user's query and the specified storage.
-  * @param query The user's query string.
-  * @param storageId The ID of the storage to use for context.
-  * @returns An async generator that yields chat response chunks.
-  * @author Cristono Wijaya
-  */
-  public async *chatStream(query: string, storageId: string): AsyncGenerator<string> {
+   * Generates a streaming chat response based on the user's query and the specified storage.
+   * @param query The user's query string.
+   * @param storageId The ID of the storage to use for context.
+   * @returns An async generator that yields chat response chunks.
+   * @author Cristono Wijaya
+   */
+  public async *chatStream(
+    query: string,
+    storageId: string,
+  ): AsyncGenerator<string> {
     const storage = await this.storageModel.findById(storageId);
     if (!storage) {
       throw new Error('Storage not found');
     }
-    const vectorStore = await this._getVectorStore(storage.qdrantCollectionName);
+    const vectorStore = await this._getVectorStore(
+      storage.qdrantCollectionName,
+    );
     const retrieve = this._retriveTool(vectorStore);
     const tools = [retrieve];
-    const systemPrompt =`
+    const systemPrompt = `
       You are an AI assistant that helps users by providing information based on the documents retrieved from the storage.
       Use the retrieved documents to answer the user's query as accurately as possible.
-    `; 
+    `;
 
     const agent = createAgent({
-      model: "gpt-4o-mini",
+      model: 'gpt-4o-mini',
       tools,
       systemPrompt,
-      middleware: [summarizationMiddleware({ 
-        model: "gpt-4o-mini",  
-        messagesToKeep: 5 
-      })]
+      middleware: [
+        summarizationMiddleware({
+          model: 'gpt-4o-mini',
+          messagesToKeep: 5,
+        }),
+      ],
     });
-    
-    let agentInputs = {
-      messages: [{ role: "user", content: query }]
-    }
+
+    const agentInputs = {
+      messages: [{ role: 'user', content: query }],
+    };
 
     const stream = await agent.stream(agentInputs, {
-      streamMode: "values",
+      streamMode: 'values',
     });
 
     for await (const step of stream) {
       const lastMessage = step.messages[step.messages.length - 1];
       yield JSON.stringify({
         type: lastMessage.type,
-        content: lastMessage.content
+        content: lastMessage.content,
       }) + '\n';
     }
   }

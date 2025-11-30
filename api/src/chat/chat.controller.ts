@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Res,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ChatService } from './chat.service';
 import { SearchQueryDto } from './dtos/search-query.dto';
@@ -23,13 +32,12 @@ export class ChatController {
       const chats = await this.chatService.getAllChats();
       return {
         message: 'All chats endpoint',
-        data: chats
-      }
-    }
-    catch (error) {
+        data: chats,
+      };
+    } catch (error) {
       return {
-        message: 'Error fetching chats'
-      }
+        message: 'Error fetching chats',
+      };
     }
   }
 
@@ -45,13 +53,12 @@ export class ChatController {
       const chat = await this.chatService.getChatById(id);
       return {
         message: 'Chat detail endpoint',
-        data: chat
-      }
-    }
-    catch (error) {
+        data: chat,
+      };
+    } catch (error) {
       return {
-        message: 'Error fetching chat detail'
-      }
+        message: 'Error fetching chat detail',
+      };
     }
   }
 
@@ -67,14 +74,13 @@ export class ChatController {
       const chat = await this.chatService.createChat(body);
       return {
         message: 'Create chat endpoint',
-        data: chat
-      }
-    }
-    catch (error) {
+        data: chat,
+      };
+    } catch (error) {
       console.log(error);
       return {
-        message: 'Error creating chat'
-      }
+        message: 'Error creating chat',
+      };
     }
   }
 
@@ -86,18 +92,20 @@ export class ChatController {
    * @author Cristono Wijaya
    */
   @Put('update-chat/:id')
-  async updateChat(@Param('id', new ParseObjectIdPipe()) id: string, @Body() body: Partial<UpdateChatDto>) {
+  async updateChat(
+    @Param('id', new ParseObjectIdPipe()) id: string,
+    @Body() body: Partial<UpdateChatDto>,
+  ) {
     try {
       const chat = await this.chatService.updateChat(id, body);
       return {
         message: 'Update chat endpoint',
-        data: chat
-      }
-    }
-    catch (error) {
+        data: chat,
+      };
+    } catch (error) {
       return {
-        message: 'Error updating chat'
-      }
+        message: 'Error updating chat',
+      };
     }
   }
 
@@ -113,16 +121,15 @@ export class ChatController {
       const chat = await this.chatService.deleteChat(id);
       return {
         message: 'Delete chat endpoint',
-        data: chat
-      }
-    }
-    catch (error) {
+        data: chat,
+      };
+    } catch (error) {
       return {
-        message: 'Error deleting chat'
-      }
+        message: 'Error deleting chat',
+      };
     }
   }
-  
+
   /**
    * Handles similarity search requests.
    * @param query The query string to search for.
@@ -132,7 +139,7 @@ export class ChatController {
    */
   @Post('similarity-search')
   @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 searches per minute
-  async similaritySearch(@Body() body:SearchQueryDto): Promise<any> {
+  async similaritySearch(@Body() body: SearchQueryDto): Promise<any> {
     return await this.chatService.similaritySearch(body.query, body.storageId);
   }
 
@@ -145,7 +152,7 @@ export class ChatController {
    */
   @Post('chat-response')
   @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 chat requests per minute
-  chatResponse(@Body() body:ChatQueryDto): any {
+  chatResponse(@Body() body: ChatQueryDto): any {
     return this.chatService.chatResponse(body.query, body.chatId);
   }
 
@@ -158,7 +165,10 @@ export class ChatController {
    */
   @Post('chat-stream')
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 streaming requests per minute
-  async chatStream(@Body() body:ChatQueryDto, @Res() res:Response): Promise<any> {
+  async chatStream(
+    @Body() body: ChatQueryDto,
+    @Res() res: Response,
+  ): Promise<any> {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');

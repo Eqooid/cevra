@@ -10,11 +10,11 @@ import { QdrantModule } from 'src/qdrant/qdrant.module';
   imports: [
     MongooseModule.forFeature([
       { name: Storage.name, schema: StorageSchema },
-      { name: Item.name, schema: ItemSchema }
+      { name: Item.name, schema: ItemSchema },
     ]),
-    QdrantModule
+    QdrantModule,
   ],
   providers: [VectorStorageService],
-  controllers: [VectorStorageController]
+  controllers: [VectorStorageController],
 })
 export class VectorStorageModule {}

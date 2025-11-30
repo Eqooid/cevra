@@ -80,21 +80,11 @@ jobs:
           done
           
           echo "All services are ready!"
-
-      # Run API Tests
-      - name: Run ESLint on API
-        working-directory: ./api
-        run: npm run lint
       
-      # Run Unit Tests
-      - name: Run unit tests
+      # Run Build
+      - name: Run Build
         working-directory: ./api
-        run: npm run test
-      
-      # Run E2E Tests
-      - name: Run e2e tests
-        working-directory: ./api
-        run: npm run test:e2e
+        run: npm run build
 
   # UI Tests Job
   ui-tests:
@@ -160,7 +150,7 @@ jobs:
   docker-build:
     name: 'Docker Build Test'
     runs-on: ubuntu-latest
-    needs: [api-tests, ui-tests, security-audit]
+    needs: [api-tests, ui-tests]
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4

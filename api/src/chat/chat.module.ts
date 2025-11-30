@@ -13,10 +13,10 @@ import { ChatMessage, ChatMessageSchema } from 'schemas/chat-message.schema';
     MongooseModule.forFeature([
       { name: Storage.name, schema: StorageSchema },
       { name: Chat.name, schema: ChatSchema },
-      { name: ChatMessage.name, schema: ChatMessageSchema }
+      { name: ChatMessage.name, schema: ChatMessageSchema },
     ]),
-    QdrantModule
+    QdrantModule,
   ],
-  controllers: [ChatController]
+  controllers: [ChatController],
 })
 export class ChatModule {}

@@ -1,4 +1,9 @@
-import { PipeTransform, Injectable, ArgumentMetadata, BadRequestException } from '@nestjs/common';
+import {
+  PipeTransform,
+  Injectable,
+  ArgumentMetadata,
+  BadRequestException,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
 
 /**
@@ -14,7 +19,9 @@ export class ParseObjectIdPipe implements PipeTransform<string, string> {
     }
 
     if (!Types.ObjectId.isValid(value)) {
-      throw new BadRequestException(`${metadata.data} must be a valid MongoDB ObjectId`);
+      throw new BadRequestException(
+        `${metadata.data} must be a valid MongoDB ObjectId`,
+      );
     }
 
     return value;
